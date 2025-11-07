@@ -12,6 +12,8 @@ venv/
 .env
 .envrc
 
+*.pdf
+
 # Manim build artifacts (large)
 # Ignore all media outputs by default…
 media/**
