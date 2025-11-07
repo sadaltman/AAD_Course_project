@@ -1,0 +1,5 @@
+# Python dependencies for the Manim animations in this folder
+# Works on Linux, macOS, and Windows
+
+manim>=0.18
+numpy>=1.26
