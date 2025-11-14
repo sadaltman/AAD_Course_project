@@ -37,3 +37,14 @@ Thumbs.db
 *.tar
 *.tar.gz
 *.tgz
+
+#LOGGING MDs
+Changes_implemented.md
+comprehensive_benchmark_fixed.py
+generate_test_datasets.py
+test_improved_shapes.py
+visualize_shapes.py
+shape_distribution_benchmark.py
+*.json
+*.jpg
+

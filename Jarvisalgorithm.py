@@ -1,6 +1,7 @@
 from manim import *
 import numpy as np
 import math
+import random
 
 
 CLOCKWISE = 1
@@ -338,6 +339,76 @@ def orientation(p: Point, q: Point, r: Point):
         return COUNTERCLOCKWISE
 
 
+def dist(p1: Point, p2: Point) -> float:
+    """Calculate Euclidean distance between two points"""
+    return math.sqrt((p2.x - p1.x)**2 + (p2.y - p1.y)**2)
+
+
+def convex_hull_area(hull_points: list[Point]) -> float:
+    """Calculate area of convex hull using Shoelace formula"""
+    if len(hull_points) < 3:
+        return 0.0
+    
+    area = 0.0
+    n = len(hull_points)
+    for i in range(n):
+        j = (i + 1) % n
+        area += hull_points[i].x * hull_points[j].y
+        area -= hull_points[j].x * hull_points[i].y
+    
+    return abs(area) / 2.0
+
+
+def convex_hull_perimeter(hull_points: list[Point]) -> float:
+    """Calculate perimeter of convex hull"""
+    if len(hull_points) < 2:
+        return 0.0
+    
+    perimeter = 0.0
+    n = len(hull_points)
+    for i in range(n):
+        j = (i + 1) % n
+        perimeter += dist(hull_points[i], hull_points[j])
+    
+    return perimeter
+
+
+def point_in_convex_hull(point: Point, hull_points: list[Point]) -> str:
+    """
+    Check if a point is inside, on edge, or outside the convex hull.
+    Returns: 'inside', 'on_edge', or 'outside'
+    """
+    if len(hull_points) < 3:
+        return 'outside'
+    
+    n = len(hull_points)
+    epsilon = 1e-9  # Tolerance for floating-point comparison
+    
+    # Check if point is on any edge
+    for i in range(n):
+        j = (i + 1) % n
+        # Check if point is collinear with edge and within bounds
+        if orientation(hull_points[i], hull_points[j], point) == COLLINEAR:
+            # Check if point is between hull_points[i] and hull_points[j]
+            min_x = min(hull_points[i].x, hull_points[j].x)
+            max_x = max(hull_points[i].x, hull_points[j].x)
+            min_y = min(hull_points[i].y, hull_points[j].y)
+            max_y = max(hull_points[i].y, hull_points[j].y)
+            
+            if (min_x - epsilon <= point.x <= max_x + epsilon and 
+                min_y - epsilon <= point.y <= max_y + epsilon):
+                return 'on_edge'
+    
+    # Check if point is inside using cross product method
+    # All cross products should have the same sign for a point inside convex hull
+    for i in range(n):
+        j = (i + 1) % n
+        if orientation(hull_points[i], hull_points[j], point) == CLOCKWISE:
+            return 'outside'
+    
+    return 'inside'
+
+
 def convexHull(points: list[Point], n: int):
     """Jarvis March algorithm without visualization"""
     
@@ -364,18 +435,186 @@ def convexHull(points: list[Point], n: int):
     return [points[i] for i in hull]
 
 
+def performance_analysis(dataset_sizes, distribution_name="custom"):
+    """
+    Analyzes performance of Jarvis March across different input sizes.
+    Generates and saves performance graphs to media/graphs/.
+    
+    Args:
+        dataset_sizes: List of tuples (n, points) where n is the size and points is the list of Point objects
+        distribution_name: Name of the distribution type for the graph title
+    """
+    try:
+        import matplotlib.pyplot as plt
+    except ImportError:
+        print("\n" + "!" * 60)
+        print("ERROR: matplotlib is not installed!")
+        print("!" * 60)
+        print("\nTo install matplotlib, run:")
+        print("  pip install matplotlib")
+        print("or")
+        print("  conda install matplotlib")
+        print("\nPerformance analysis requires matplotlib for graph generation.")
+        print("!" * 60)
+        return
+    
+    import os
+    import time
+    
+    sizes = []
+    hull_sizes = []
+    times = []
+    nh_values = []
+    
+    print("\n" + "=" * 60)
+    print("PERFORMANCE ANALYSIS - JARVIS MARCH")
+    print("=" * 60)
+    print(f"Distribution: {distribution_name}")
+    print(f"Testing {len(dataset_sizes)} different input sizes...")
+    
+    for n, test_points in dataset_sizes:
+        # Run multiple times and take average
+        num_runs = 5
+        total_time = 0
+        hull_size = 0
+        
+        for run in range(num_runs):
+            start = time.perf_counter()
+            hull = convexHull(test_points, len(test_points))
+            end = time.perf_counter()
+            total_time += (end - start) * 1000  # Convert to ms
+            if run == 0:  # Get hull size from first run
+                hull_size = len(hull)
+        
+        avg_time = total_time / num_runs
+        sizes.append(n)
+        hull_sizes.append(hull_size)
+        times.append(avg_time)
+        nh_values.append(n * hull_size)
+        print(f"  n={n:5d}, h={hull_size:4d}: {avg_time:.4f} ms (avg of {num_runs} runs)")
+    
+    os.makedirs('media/graphs', exist_ok=True)
+    
+    # Graph 1: Time vs n (Input Size) - More populated x-axis
+    plt.figure(figsize=(12, 6))
+    plt.plot(sizes, times, 'ro-', linewidth=2, markersize=8)
+    plt.xlabel('Input Size (n)', fontsize=12, fontweight='bold')
+    plt.ylabel('Execution Time (ms)', fontsize=12, fontweight='bold')
+    plt.title(f"Jarvis March: Time vs Input Size (n)\n{distribution_name.replace('_', ' ').title()} Distribution", 
+              fontsize=14, fontweight='bold')
+    plt.grid(True, alpha=0.3)
+    # Add more x-axis ticks for better visualization
+    if len(sizes) > 0:
+        plt.xticks(sizes, rotation=45)
+    plt.tight_layout()
+    
+    filename1 = f'media/graphs/jarvis_march_{distribution_name}_time_vs_n.png'
+    plt.savefig(filename1, dpi=300, bbox_inches='tight')
+    print(f"\n✓ Graph 1 (Time vs n) saved to: {filename1}")
+    plt.close()
+    
+    # Graph 2: Time vs O(nh) - Theoretical Complexity
+    plt.figure(figsize=(12, 6))
+    plt.plot(nh_values, times, 'mo-', linewidth=2, markersize=8)
+    plt.xlabel('O(nh)', fontsize=12, fontweight='bold')
+    plt.ylabel('Execution Time (ms)', fontsize=12, fontweight='bold')
+    plt.title(f"Jarvis March: Time vs O(nh)\n{distribution_name.replace('_', ' ').title()} Distribution", 
+              fontsize=14, fontweight='bold')
+    plt.grid(True, alpha=0.3)
+    plt.tight_layout()
+    
+    filename2 = f'media/graphs/jarvis_march_{distribution_name}_time_vs_nh.png'
+    plt.savefig(filename2, dpi=300, bbox_inches='tight')
+    print(f"✓ Graph 2 (Time vs O(nh)) saved to: {filename2}")
+    plt.close()
+
+
 if __name__ == '__main__':
+    import time
+    import random
+    
     points = [
-        Point(0, 3),
-        Point(2, 2),
-        Point(1, 1),
-        Point(2, 1),
-        Point(3, 0),
-        Point(0, 0),
-        Point(3, 3)
+        Point(5.29, 3.48), Point(9.75, -1.54), Point(11.02, -0.28), Point(10.39, -0.28), 
+        Point(11.02, 0.98), Point(8.48, -0.911), Point(9.75, 1), Point(9.72, 1.6), 
+        Point(9.12, 2.91), Point(7.85, 2.29), Point(7.21, 1.62), Point(6.57, 0.36), 
+        Point(4.65, 2.29), Point(5.29, 0.36), Point(3.38, 2.91), Point(4.03, 1), 
+        Point(2.75, 1), Point(5.29, -1.573), Point(3.38, -0.911), Point(5.94, -2.18), 
+        Point(2.11, -0.911), Point(4.66, -2.2), Point(3.38, -2.18), Point(7.21, -2.782)
     ]
     
+    print("=" * 60)
+    print("JARVIS MARCH (GIFT WRAPPING) - CONVEX HULL ALGORITHM")
+    print("=" * 60)
+    print(f"\nNumber of input points: {len(points)}")
+    
+    # Measure execution time
+    start_time = time.perf_counter()
     hull = convexHull(points, len(points))
-    print("Convex Hull points:")
-    for point in hull:
-        print(f"({point.x}, {point.y})")
+    end_time = time.perf_counter()
+    execution_time = (end_time - start_time) * 1000  # Convert to milliseconds
+    
+    print(f"Number of hull points: {len(hull)}")
+    print(f"Execution time: {execution_time:.4f} ms")
+    
+    print("\n" + "-" * 60)
+    print("CONVEX HULL COORDINATES:")
+    print("-" * 60)
+    for i, point in enumerate(hull, 1):
+        print(f"{i:2d}. ({point.x:7.3f}, {point.y:7.3f})")
+    
+    # Calculate area and perimeter
+    area = convex_hull_area(hull)
+    perimeter = convex_hull_perimeter(hull)
+    
+    print("\n" + "-" * 60)
+    print("GEOMETRIC PROPERTIES:")
+    print("-" * 60)
+    print(f"Area:      {area:.4f} square units")
+    print(f"Perimeter: {perimeter:.4f} units")
+    
+    # Point inclusion testing (only if n <= 100)
+    if len(points) <= 100:
+        print("\n" + "-" * 60)
+        print("POINT INCLUSION TEST:")
+        print("-" * 60)
+        
+        inside_count = 0
+        on_edge_count = 0
+        
+        for i, point in enumerate(points, 1):
+            status = point_in_convex_hull(point, hull)
+            if status == 'inside':
+                inside_count += 1
+                print(f"{i:3d}. ({point.x:7.3f}, {point.y:7.3f}) -> Inside")
+            elif status == 'on_edge':
+                on_edge_count += 1
+                print(f"{i:3d}. ({point.x:7.3f}, {point.y:7.3f}) -> On Edge")
+        
+        print(f"\nSummary: {on_edge_count} points on hull edges, {inside_count} points inside")
+        print(f"Total: {on_edge_count + inside_count} points (all points should be inside or on edge)")
+    
+    
+    print("\n" + "=" * 60)
+    
+    # Uncomment below to run performance analysis
+    # NOTE: Requires matplotlib: pip install matplotlib
+    # Using larger input sizes (1K-100K) to clearly show O(nh) behavior
+    # Smaller sizes are dominated by overhead and don't show theoretical complexity
+    
+    print("\n")
+    test_datasets = [
+        (1000, [Point(random.uniform(0, 100), random.uniform(0, 100)) for _ in range(1000)]),
+        (5000, [Point(random.uniform(0, 100), random.uniform(0, 100)) for _ in range(5000)]),
+        (10000, [Point(random.uniform(0, 100), random.uniform(0, 100)) for _ in range(10000)]),
+        (50000, [Point(random.uniform(0, 100), random.uniform(0, 100)) for _ in range(50000)]),
+        (100000, [Point(random.uniform(0, 100), random.uniform(0, 100)) for _ in range(100000)]),
+        (250000, [Point(random.uniform(0, 100), random.uniform(0, 100)) for _ in range(250000)]),
+        (500000, [Point(random.uniform(0, 100), random.uniform(0, 100)) for _ in range(500000)]),
+        (750000, [Point(random.uniform(0, 100), random.uniform(0, 100)) for _ in range(750000)]),
+        (1000000, [Point(random.uniform(0, 100), random.uniform(0, 100)) for _ in range(1000000)]),
+    ]
+    performance_analysis(test_datasets, distribution_name="uniform_random")
+    
+    
+
+    

@@ -74,12 +74,55 @@ Outputs are saved under `media/videos/<ModuleName>/<quality>/Algorithm.mp4`.
 
 ## Console‑only runs (no animation)
 
-```
+```bash
 python ChansAlgorithm.py
 python grahamscan.py
 python Jarvisalgorithm.py
 python Quickhull.py
+python monotonechain.py
+python DivideAndConquer.py
 ```
+
+## Benchmarking & Performance Analysis
+
+This project includes two comprehensive benchmark scripts:
+
+### 1. Distribution-Based Benchmark (`comprehensive_benchmark_fixed.py`)
+Tests algorithms on 3 classic distributions:
+- **Uniform Random**: Average case performance
+- **Circular**: Worst case (h = n, all points on hull)
+- **Clustered**: Best case (small h, few hull points)
+
+**Run:**
+```bash
+python comprehensive_benchmark_fixed.py
+```
+
+**Generates:**
+- 6 tables (execution time + hull size for each distribution)
+- 4 graphs (3 distribution comparisons + 1 combined view)
+- Output: `media/graphs/comparison_*.png`
+
+### 2. Shape-Based Benchmark (`shape_distribution_benchmark.py`)
+Tests algorithms on 6 geometric shapes:
+- **Square**: Points in square with boundary
+- **Disc**: Points in circle with circumference
+- **Circle**: All points on perimeter (worst case, h=n)
+- **Star**: 5-pointed star (best case, h=5)
+- **Though (Cloud)**: Irregular blob shape
+- **Line**: Collinear points (degenerate case)
+
+**Run:**
+```bash
+python shape_distribution_benchmark.py
+```
+
+**Generates:**
+- Summary table comparing all algorithms across shapes
+- Single graph with 2×3 grid (6 subplots, one per algorithm)
+- Shows Time vs n for all 6 shapes on each algorithm
+- Output: `media/graphs/shape_distribution_comparison.png`
+
 
 ## Requirements (pip users)
 
