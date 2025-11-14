@@ -6,7 +6,7 @@ This repository contains clean Manim animations for classic convex-hull algorith
 - Jarvis March / Gift Wrapping (`Jarvisalgorithm.py`)
 - QuickHull (`Quickhull.py`)
 - Monotone Chain / Andrew’s Algorithm (`monotonechain.py`)
- - Divide & Conquer (merge-based) (`DivideAndConquer.py`)
+- Divide & Conquer (merge-based) (`DivideAndConquer.py`)
 
 Each file exposes a Manim scene named `Algorithm`. You can render any of them with Manim. Minimal non-visual (console) variants are included in the same files.
 
@@ -122,6 +122,7 @@ python shape_distribution_benchmark.py
 - Single graph with 2×3 grid (6 subplots, one per algorithm)
 - Shows Time vs n for all 6 shapes on each algorithm
 - Output: `media/graphs/shape_distribution_comparison.png`
+
 
 
 ## Requirements (pip users)
